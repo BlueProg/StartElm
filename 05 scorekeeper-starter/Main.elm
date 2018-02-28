@@ -65,8 +65,37 @@ update msg model =
         Score player points ->
             score model player points
 
-        _ ->
-            model
+        Edit player ->
+            { model | playerName = player.playerName, playerId = Just player.playerId }
+
+        DeletePlay play ->
+            deletePlay model play
+
+
+deletePlay : Model -> Play -> Model
+deletePlay model play =
+    let
+        newListPlays =
+            List.filter
+                (\p ->
+                    if p.id /= play.id then
+                        True
+                    else
+                        False
+                )
+                model.plays
+
+        updateListPlayers =
+            List.map
+                (\player ->
+                    if player.playerId == play.playerId then
+                        { player | playerScore = player.playerScore - 1 * play.points }
+                    else
+                        player
+                )
+                model.players
+    in
+        { model | players = updateListPlayers, plays = newListPlays }
 
 
 score : Model -> Player -> Int -> Model
@@ -95,7 +124,6 @@ save model =
             edit model playerId
 
         Nothing ->
-            --  Debug.log "passe"
             add model
 
 
@@ -131,7 +159,7 @@ add model =
         player =
             Player (List.length model.players) model.playerName 0
     in
-        { model | players = player :: model.players }
+        { model | players = player :: model.players, playerName = "", playerId = Nothing }
 
 
 view : Model -> Html Msg
@@ -140,7 +168,39 @@ view model =
         [ h1 [] [ text "Score Keeper" ]
         , playerSection model
         , playerForm model
-        , p [] [ text (Basics.toString model) ]
+        , playsSection model
+        ]
+
+
+playsSection : Model -> Html Msg
+playsSection model =
+    div []
+        [ playListHeader
+        , playList model
+        ]
+
+
+playList : Model -> Html Msg
+playList model =
+    model.plays
+        |> List.map play
+        |> ul []
+
+
+play : Play -> Html Msg
+play play =
+    li []
+        [ i [ class "remove", onClick (DeletePlay play) ] []
+        , div [] [ text play.playerName ]
+        , div [] [ text (toString play.points) ]
+        ]
+
+
+playListHeader : Html Msg
+playListHeader =
+    header []
+        [ div [] [ text "Plays" ]
+        , div [] [ text "Points" ]
         ]
 
 
